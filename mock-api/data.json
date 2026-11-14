@@ -1,0 +1,115 @@
+{
+  "_note": "Data sampel fiktif untuk keperluan tes.",
+  "cart": {
+    "items": [
+      {
+        "sku": "SKU-001",
+        "name": "Kaos Polos Katun",
+        "price": 85000,
+        "qty": 2,
+        "stock": 10
+      },
+      {
+        "sku": "SKU-002",
+        "name": "Kaus Kaki (3 pasang)",
+        "price": 25000,
+        "qty": 3,
+        "stock": 50
+      },
+      {
+        "sku": "SKU-003",
+        "name": "Topi Baseball",
+        "price": 89900,
+        "qty": 1,
+        "stock": 4
+      },
+      {
+        "sku": "SKU-004",
+        "name": "Tas Selempang",
+        "price": 129000,
+        "qty": 1,
+        "stock": 6
+      },
+      {
+        "sku": "SKU-005",
+        "name": "Sepatu Lari Pro",
+        "price": 450000,
+        "qty": 1,
+        "stock": 0
+      }
+    ],
+    "shipping": {
+      "fee": 20000,
+      "free_above": 450000
+    }
+  },
+  "vouchers": [
+    {
+      "code": "HEMAT10",
+      "type": "percent",
+      "value": 10,
+      "max_discount": 25000,
+      "min_spend": 100000,
+      "expires_at": "2027-12-31T23:59:59+07:00",
+      "active": true
+    },
+    {
+      "code": "HEMAT10",
+      "type": "percent",
+      "value": 5,
+      "max_discount": 10000,
+      "min_spend": 50000,
+      "expires_at": "2026-01-31T23:59:59+07:00",
+      "active": true
+    },
+    {
+      "code": "DISKON50K",
+      "type": "fixed",
+      "value": 50000,
+      "min_spend": 400000,
+      "expires_at": "2027-12-31",
+      "active": true
+    },
+    {
+      "code": "PAYDAY75",
+      "type": "percentage",
+      "value": 7.5,
+      "maxDiscount": null,
+      "min_spend": 200000,
+      "expires_at": "2027-12-31T23:59:59+07:00",
+      "active": true
+    },
+    {
+      "code": "KILAT25",
+      "type": "percent",
+      "value": 25,
+      "max_discount": 100000,
+      "min_spend": 200000,
+      "expires_at": "2026-10-31T23:59:59+07:00",
+      "active": true
+    },
+    {
+      "code": "GRATISONGKIR",
+      "type": "free_shipping",
+      "min_spend": 0,
+      "expires_at": "2027-12-31T23:59:59+07:00",
+      "active": true
+    },
+    {
+      "code": "NEWUSER",
+      "type": "fixed",
+      "value": 30000,
+      "min_spend": 50000,
+      "expires_at": "2027-12-31T23:59:59+07:00",
+      "active": false
+    },
+    {
+      "code": "PROMO100K",
+      "type": "fixed",
+      "value": 100000,
+      "min_spend": 0,
+      "expires_at": "2027-12-31T23:59:59+07:00",
+      "active": true
+    }
+  ]
+}
