@@ -12,7 +12,7 @@ export const useCartStore = defineStore('cart', {
     cart: [] as CartItem[],
     availablePromos: [] as PromoApi[],
     selectedItems: [] as CartItem[],
-    selectedPromo: null as string | null,
+    selectedPromo: [] as PromoApi[],
     subtotal: 0,
     discountPrice: 0,
     deliveryFee: 0,
@@ -84,8 +84,23 @@ export const useCartStore = defineStore('cart', {
       this.selectedItems = this.selectedItems.filter((i) => i.sku !== item.sku)
       this.recalculateTotal()
     },
-    selectPromo(promo: string) {
-      this.selectedPromo = promo
+    selectPromo(promo: PromoApi) {
+      this.selectedPromo.push(promo)
+    },
+    unselectPromo(promo: PromoApi) {
+      this.selectedPromo = this.selectedPromo.filter((p) => p.code !== promo.code)
+    },
+    calculateDiscountPrice() {
+      this.discountPrice = this.selectedPromo.reduce((acc, curr) => {
+        if (curr.type === 'percent') {
+          if (curr.max_discount && Math.floor(this.subtotal * Number(curr.value) / 100) > curr.max_discount) {
+            return acc + curr.max_discount
+          }
+          return acc + Math.floor(this.subtotal * Number(curr.value) / 100)
+        } else {
+          return acc + Math.floor(Number(curr.value))
+        }
+      }, 0)
     },
   },
 })

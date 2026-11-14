@@ -6,7 +6,6 @@ export type CartItemApi = {
   qty?: number
   quantity?: number
   stock?: number
-  stok?: number
 }
 
 export type PromoApi = {
