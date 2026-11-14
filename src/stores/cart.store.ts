@@ -101,6 +101,10 @@ export const useCartStore = defineStore('cart', {
       this.selectedItems = this.selectedItems.filter((i) => i.sku !== item.sku)
       if (this.selectedItems.length < 1) {
         this.selectedPromo = []
+      } else {
+        this.selectedPromo = this.selectedPromo.filter(
+          (p: PromoApi) => p?.min_spend && p.min_spend < this.selectedItems.reduce((acc, curr) => acc + curr.price * curr.qty, 0)
+        )
       }
       this.recalculateTotal()
     },
