@@ -72,14 +72,14 @@
                             <button
                                 type="button"
                                 class="px-2 py-1 bg-amber-500 text-white rounded-md"
-                                @click="togglePromo(promo)"
+                                @click.stop="togglePromo(promo)"
                                 :disabled="!isPromoApplicable(promo)"
                                 :class="{
                                     'opacity-50 cursor-not-allowed': !isPromoApplicable(promo),
                                     'opacity-100 cursor-pointer': isPromoApplicable(promo),
                                 }"
                             >
-                                {{ cartStore.selectedPromo.includes(promo) ? 'Applied' : 'Apply' }}
+                                {{ isPromoSelected(promo) ? 'Applied' : 'Apply' }}
                             </button>
                         </div>
                     </div>
@@ -122,12 +122,18 @@ const togglePromoModal = () => {
     }
 }
 
-const togglePromo = (promo: PromoApi) => {
-    if (cartStore.selectedPromo.includes(promo)) {
+const isPromoSelected = (promo: PromoApi) =>
+    cartStore.selectedPromo.some((p) => p.code === promo.code)
+
+const togglePromo = async (promo: PromoApi) => {
+    if (isPromoSelected(promo)) {
         cartStore.unselectPromo(promo)
-    } else {
-        cartStore.selectPromo(promo)
+        return
     }
+    if (!isPromoApplicable(promo)) return
+
+    const result = await cartStore.selectPromo(promo)
+    if (!result?.ok) return
 }
 
 const isPromoApplicable = (promo: PromoApi) => {

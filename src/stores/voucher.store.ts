@@ -1,45 +1,61 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
 import { useFetchStore } from './fetch.store'
 import { useErrorStore } from './error.store'
 import type { PromoApi } from '@/types/cart'
 import { useCartStore } from './cart.store'
+import {
+  handleVoucherValidateResponse,
+  type ValidatePromoResult,
+  type VoucherValidateBody,
+} from '@/utils/handleVoucherValidateResponse'
 
-const currentDate = new Date();
+const currentDate = new Date()
 
 export const useVoucherStore = defineStore('voucher', {
   state: () => ({
     availableVouchers: null as PromoApi[] | null,
     deliveryPromo: null as PromoApi | null,
-    fetchStore: useFetchStore(),
-    errorStore: useErrorStore(),
-    cartStore: useCartStore(),
   }),
   actions: {
     async fetchAvailableVouchers() {
-      const res = await this.fetchStore.fetchData('vouchers')
+      const fetchStore = useFetchStore()
+      const errorStore = useErrorStore()
+      const res = await fetchStore.fetchData('vouchers')
 
       if (!res || res?.error) {
-        this.errorStore.setError(res.error || { message: "Terjadi Kesalahan Pada Sistem! Tidak dapat mendapatkan data voucher!", status: 500 })
+        errorStore.setError(
+          res?.error || {
+            message:
+              'Terjadi Kesalahan Pada Sistem! Tidak dapat mendapatkan data voucher!',
+            status: 500,
+          },
+        )
         return
       }
 
-      this.availableVouchers = res.data.filter((promo: PromoApi) =>
-        promo.active && new Date(promo.expires_at).toISOString() > currentDate.toISOString()
+      this.availableVouchers = res.data.filter(
+        (promo: PromoApi) =>
+          promo.active &&
+          new Date(promo.expires_at).getTime() > currentDate.getTime(),
       )
     },
-    async validatePromo(promo: PromoApi) {
-      const res = await this.fetchStore.postData('vouchers/validate', {
-        code: promo.code,
-        subtotal: this.cartStore.subtotal,
-      })
+    async validatePromo(promo: PromoApi): Promise<ValidatePromoResult> {
+      try {
+        const cartStore = useCartStore()
+        const fetchStore = useFetchStore()
+        const res = await fetchStore.postData('vouchers/validate', {
+          code: promo.code,
+          subtotal: cartStore.subtotal,
+        })
 
-      if (!res || res?.error) {
-        this.errorStore.setError(res.error || { message: "Terjadi Kesalahan Pada Sistem! Tidak dapat memvalidasi voucher!", status: 500 })
-        return
+        if (res == null || typeof res !== 'object') {
+          return { ok: false }
+        }
+
+        return handleVoucherValidateResponse(res as VoucherValidateBody, 200)
+      } catch {
+        return { ok: false }
       }
-
-      return res.data
     },
-  }
+  },
 })

@@ -3,6 +3,8 @@ import type { CartItem, PromoApi, ShippingApi } from '../types/cart'
 import { clampCartQty } from '../utils/cartQty'
 import { useFetchStore } from './fetch.store'
 import { useErrorStore } from './error.store'
+import { useVoucherStore } from './voucher.store'
+import type { ValidatePromoResult } from '@/utils/handleVoucherValidateResponse'
 
 const QTY_PATCH_DEBOUNCE_MS = 400
 const qtyPatchTimers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -35,17 +37,20 @@ export const useCartStore = defineStore('cart', {
     recalculateTotal() {
       this.subtotal = this.selectedItems.reduce((acc, curr) => acc + curr.price * curr.qty, 0)
 
-      const shipping = this.shipping
-      if (shipping) {
-        this.deliveryFee =
-          this.subtotal < shipping.free_above ? shipping.fee : 0
+      const hasFreeShippingPromo = this.selectedPromo.some((p: PromoApi) => p.type === 'free_shipping')
+
+      if (hasFreeShippingPromo) {
+        this.deliveryFee = 0
+      } else if (this.shipping) {
+        const { fee, free_above } = this.shipping
+        this.deliveryFee = this.subtotal < free_above ? fee : 0
       } else {
         this.deliveryFee = 0
       }
 
       this.calculateDiscountPrice()
-      this.total = this.subtotal - this.discountPrice + this.deliveryFee
-      this.total = this.total < 0 ? 0 : this.total
+      this.total = this.subtotal - this.discountPrice + this.deliveryFee;
+      this.total = this.total < 0 ? 0 : this.total;
     },
     setCartQty(sku: string, rawQty: number) {
       const item = this.cart.find((i) => i.sku === sku)
@@ -94,26 +99,43 @@ export const useCartStore = defineStore('cart', {
     },
     unselectItem(item: CartItem) {
       this.selectedItems = this.selectedItems.filter((i) => i.sku !== item.sku)
+      if (this.selectedItems.length < 1) {
+        this.selectedPromo = []
+      }
       this.recalculateTotal()
     },
-    selectPromo(promo: PromoApi) {
-      this.selectedPromo.push(promo)
+    async selectPromo(promo: PromoApi): Promise<ValidatePromoResult> {
+      const voucherStore = useVoucherStore()
+      const result = await voucherStore.validatePromo(promo)
+      if (!result.ok) {
+        return result
+      }
+      this.applyPromo(result.voucher)
+      return result
+    },
+    applyPromo(voucher: PromoApi) {
+      if (this.selectedPromo.some((p) => p.code === voucher.code)) {
+        return
+      }
+      this.selectedPromo.push(voucher)
       this.recalculateTotal()
     },
     unselectPromo(promo: PromoApi) {
-      this.selectedPromo = this.selectedPromo.filter((p) => p.code !== promo.code)
+      this.selectedPromo = this.selectedPromo.filter((p: PromoApi) => p.code !== promo.code)
       this.recalculateTotal()
     },
     calculateDiscountPrice() {
-      this.discountPrice = this.selectedPromo.reduce((acc, curr) => {
-        if (curr.type === 'percent') {
+      this.discountPrice = this.selectedPromo.reduce((acc: number, curr: PromoApi) => {
+        if (curr.type === 'percent' || curr.type === 'percentage') {
           if (curr.max_discount && Math.floor(this.subtotal * Number(curr.value) / 100) > curr.max_discount) {
             return acc + curr.max_discount
           }
           return acc + Math.floor(this.subtotal * Number(curr.value) / 100)
-        } else {
+        }
+        if (curr.type === 'fixed') {
           return acc + Math.floor(Number(curr.value))
         }
+        return acc
       }, 0)
     },
   },

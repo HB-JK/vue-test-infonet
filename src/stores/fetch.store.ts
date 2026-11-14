@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import type { AppError } from './error.store'
 import { useErrorStore } from './error.store'
 import { handleCartQtyPatchResponse } from '../utils/handleCartQtyPatchResponse'
+import { handleVoucherValidateHttpError } from '../utils/handleVoucherValidateHttpError'
 
 const BASE_URL = import.meta.env.VITE_API_URL
 
@@ -32,21 +33,54 @@ export const useFetchStore = defineStore('fetch', {
         return null
       }
     },
-    async postData(url: string, data: any) {
+    async postData(url: string, data: unknown) {
+      const errorStore = useErrorStore()
       try {
         const response = await fetch(`${BASE_URL}/${url}`, {
           method: 'POST',
-          body: JSON.stringify(data)
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
         })
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
+        let body: unknown = null
+        try {
+          body = await response.json()
+        } catch {
+          body = null
         }
 
-        const res = await response.json()
-        return res
-      } catch (error: any) {
-        this.error = error
+        if (!response.ok) {
+          const errBody =
+            body && typeof body === 'object'
+              ? (body as { message?: string; reason?: string })
+              : null
+          if (url === 'vouchers/validate') {
+            handleVoucherValidateHttpError(errBody, response.status)
+          } else {
+            const payload: AppError = {
+              message:
+                errBody?.message ??
+                (response.status === 400
+                  ? 'Permintaan tidak valid.'
+                  : 'Terjadi Kesalahan Pada Sistem!'),
+              status: response.status,
+              reason: errBody?.reason,
+            }
+            this.error = payload
+            errorStore.setError(payload)
+          }
+          this.error = errorStore.error
+          return null
+        }
+
+        return body
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : 'Terjadi Kesalahan Pada Sistem!'
+        const payload: AppError = { message, status: 0 }
+        this.error = payload
+        errorStore.setError(payload)
+        return null
       }
     },
     async putData(url: string, data: any) {
