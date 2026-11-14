@@ -57,14 +57,21 @@
 
                             <!-- showing the promo detail -->
                             <div
-                                v-if="promo.min_spend != null || promo.max_discount != null"
+                                v-if="
+                                    promo.min_spend != null ||
+                                    promo.max_discount != null ||
+                                    promo.maxDiscount
+                                "
                                 class="text-xs"
                             >
                                 <p v-if="promo.min_spend != null">
                                     Min.Pembelian {{ priceFormat(promo.min_spend) }}
                                 </p>
                                 <p v-if="promo.max_discount != null">
-                                    Max Diskon {{ priceFormat(promo.max_discount) }}
+                                    Max Diskon
+                                    {{
+                                        priceFormat(promo?.max_discount || promo?.maxDiscount || 0)
+                                    }}
                                 </p>
                             </div>
                         </div>

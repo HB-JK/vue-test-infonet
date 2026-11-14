@@ -38,6 +38,10 @@ export function handleCartQtyPatchResponse(
       cartStore.cart = cartStore.cart.map((i) =>
         i.sku === sku ? { ...i, qty: clamped, stock } : i,
       )
+      cartStore.selectedItems = cartStore.selectedItems.map((i) => {
+        const updated = cartStore.cart.find((c) => c.sku === i.sku)
+        return updated ?? i
+      })
       cartStore.recalculateTotal()
     }
     errorStore.setError({
@@ -54,6 +58,10 @@ export function handleCartQtyPatchResponse(
     cartStore.cart = cartStore.cart.map((i) =>
       i.sku === sku ? { ...i, qty: serverQty } : i,
     )
+    cartStore.selectedItems = cartStore.selectedItems.map((i) => {
+      const updated = cartStore.cart.find((c) => c.sku === i.sku)
+      return updated ?? i
+    })
     cartStore.recalculateTotal()
   }
 }

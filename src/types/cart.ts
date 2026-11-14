@@ -15,6 +15,7 @@ export type PromoApi = {
   type: PromoType
   value?: number
   max_discount?: number
+  maxDiscount?: number
   min_spend?: number
   expires_at: string
   active: boolean

@@ -5,6 +5,7 @@
                 <input
                     type="checkbox"
                     class="w-4 h-4"
+                    :checked="isSelected"
                     @change="toggleSelect"
                     :disabled="item.stock <= 0"
                     :class="{
@@ -70,6 +71,10 @@ const props = defineProps<{
 const canDecrease = computed(() => canDecreaseQty(props.item.qty))
 const canIncrease = computed(() => canIncreaseQty(props.item.qty, props.item.stock))
 
+const isSelected = computed(() =>
+  cartStore.selectedItems.some((i) => i.sku === props.item.sku),
+)
+
 const increaseQty = () => {
     const next = clampCartQty(props.item.qty + 1, props.item.stock)
     if (next === props.item.qty) return
@@ -83,10 +88,10 @@ const decreaseQty = () => {
 }
 
 const toggleSelect = () => {
-    if (!cartStore.selectedItems.includes(props.item) && props.item.stock > 0) {
-        cartStore.selectItem(props.item)
-    } else {
+    if (isSelected.value) {
         cartStore.unselectItem(props.item)
+    } else if (props.item.stock > 0) {
+        cartStore.selectItem(props.item)
     }
 }
 </script>

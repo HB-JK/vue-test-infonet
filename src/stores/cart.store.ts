@@ -43,7 +43,7 @@ export const useCartStore = defineStore('cart', {
         this.deliveryFee = 0
       } else if (this.shipping) {
         const { fee, free_above } = this.shipping
-        this.deliveryFee = this.subtotal < free_above ? fee : 0
+        this.deliveryFee = this.subtotal < free_above && this.selectedItems.length > 0 ? fee : 0
       } else {
         this.deliveryFee = 0
       }
@@ -60,7 +60,10 @@ export const useCartStore = defineStore('cart', {
       if (qty === item.qty) return
 
       this.cart = this.cart.map((i) => (i.sku === sku ? { ...i, qty } : i))
-      this.selectedItems = this.selectedItems.map((i) => (i.sku === sku ? { ...i, qty } : i))
+      this.selectedItems = this.selectedItems.map((i) => {
+        const updated = this.cart.find((c) => c.sku === i.sku)
+        return updated ?? i
+      })
       this.recalculateTotal()
       this.scheduleQtyPatch(sku, qty)
     },
@@ -94,16 +97,24 @@ export const useCartStore = defineStore('cart', {
       this.setCartQty(item.sku, qty)
     },
     selectItem(item: CartItem) {
-      this.selectedItems.push(item)
+      if (this.selectedItems.some((i) => i.sku === item.sku)) return
+      const current = this.cart.find((i) => i.sku === item.sku)
+      if (!current || current.stock <= 0) return
+      this.selectedItems.push(current)
       this.recalculateTotal()
     },
     unselectItem(item: CartItem) {
       this.selectedItems = this.selectedItems.filter((i) => i.sku !== item.sku)
+
       if (this.selectedItems.length < 1) {
         this.selectedPromo = []
       } else {
+        const subtotal = this.selectedItems.reduce(
+          (acc, curr) => acc + curr.price * curr.qty,
+          0,
+        )
         this.selectedPromo = this.selectedPromo.filter(
-          (p: PromoApi) => p?.min_spend && p.min_spend < this.selectedItems.reduce((acc, curr) => acc + curr.price * curr.qty, 0)
+          (p: PromoApi) => subtotal >= (p.min_spend ?? 0),
         )
       }
       this.recalculateTotal()
