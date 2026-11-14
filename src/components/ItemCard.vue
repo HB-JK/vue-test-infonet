@@ -7,6 +7,10 @@
                     class="w-4 h-4"
                     @change="toggleSelect"
                     :disabled="item.stock <= 0"
+                    :class="{
+                        'opacity-50 cursor-not-allowed': item.stock <= 0,
+                        'cursor-pointer': item.stock > 0,
+                    }"
                 />
                 <div class="px-1">
                     <h2 class="text-lg font-bold">

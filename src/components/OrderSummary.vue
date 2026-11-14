@@ -7,12 +7,15 @@
         </div>
 
         <div
-            class="my-2 p-2 border-2 border-gray-300 cursor-pointer hover:shadow-md transition-all duration-300 relative"
-            @click="openPromoModal"
+            class="my-2 p-2 border-2 border-gray-300 cursor-pointer hover:shadow-md transition-all duration-300 relative rounded-sm"
+            @click="togglePromoModal"
         >
             <div class="flex items-center justify-between">
                 <p class="text-sm text-gray-500">Harga Diskon</p>
-                <p class="text-sm text-gray-500">{{ priceFormat(cartStore.discountPrice) }}</p>
+                <p class="text-sm text-gray-500 flex items-center gap-1">
+                    {{ priceFormat(cartStore.discountPrice) }}
+                    <ChevronRightIcon class="w-4 h-4 text-gray-500" />
+                </p>
             </div>
             <div class="flex items-center justify-between gap-1">
                 <p class="text-sm text-gray-500">
@@ -24,12 +27,63 @@
             </div>
 
             <div
-                class="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"
+                class="absolute -bottom-41 left-0 w-full min-h-40 h-full bg-white p-2 border border-gray-300 rounded-sm hidden transition-all duration-300"
                 ref="promoPopoverRef"
             >
-                <p class="text-sm text-white">
-                    {{ cartStore.selectedPromo.length }}
-                </p>
+                <div class="p-2 h-full overflow-y-auto flex flex-col gap-1">
+                    <div
+                        class="flex justify-between items-center p-1"
+                        v-for="promo in voucherStore.availableVouchers"
+                        :key="promo.code"
+                    >
+                        <div
+                            class="pr-2 py-1"
+                            :class="{
+                                'opacity-50 cursor-not-allowed': !isPromoApplicable(promo),
+                            }"
+                        >
+                            <!-- Showing the promo code -->
+                            <p class="text-sm" v-if="promo.type === 'free_shipping'">
+                                {{ promo.code }} - Gratis ongkir
+                            </p>
+                            <p class="text-sm" v-else>
+                                {{ promo.code }} - Diskon
+                                {{
+                                    promo.type === 'percent' || promo.type === 'percentage'
+                                        ? `${promo.value}%`
+                                        : priceFormat(promo.value ?? 0)
+                                }}
+                            </p>
+
+                            <!-- showing the promo detail -->
+                            <div
+                                v-if="promo.min_spend != null || promo.max_discount != null"
+                                class="text-xs"
+                            >
+                                <p v-if="promo.min_spend != null">
+                                    Min.Pembelian {{ priceFormat(promo.min_spend) }}
+                                </p>
+                                <p v-if="promo.max_discount != null">
+                                    Max Diskon {{ priceFormat(promo.max_discount) }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="pr-2">
+                            <button
+                                type="button"
+                                class="px-2 py-1 bg-amber-500 text-white rounded-md"
+                                @click="togglePromo(promo)"
+                                :disabled="!isPromoApplicable(promo)"
+                                :class="{
+                                    'opacity-50 cursor-not-allowed': !isPromoApplicable(promo),
+                                    'opacity-100 cursor-pointer': isPromoApplicable(promo),
+                                }"
+                            >
+                                {{ cartStore.selectedPromo.includes(promo) ? 'Applied' : 'Apply' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -54,17 +108,36 @@ import { onMounted, ref } from 'vue'
 import { useCartStore } from '../stores/cart.store'
 import { priceFormat } from '../utils/priceFormat'
 import { useVoucherStore } from '@/stores/voucher.store'
+import type { PromoApi } from '@/types/cart'
+import { ChevronRightIcon } from '@heroicons/vue/24/outline'
 
 const cartStore = useCartStore()
 const voucherStore = useVoucherStore()
 
 const promoPopoverRef = ref<HTMLElement | null>(null)
 
-const openPromoModal = () => {
-    console.log('openPromoModal')
+const togglePromoModal = () => {
     if (promoPopoverRef.value) {
-        promoPopoverRef.value.style.display = 'block'
+        promoPopoverRef.value.classList.toggle('hidden')
     }
+}
+
+const togglePromo = (promo: PromoApi) => {
+    if (cartStore.selectedPromo.includes(promo)) {
+        cartStore.unselectPromo(promo)
+    } else {
+        cartStore.selectPromo(promo)
+    }
+}
+
+const isPromoApplicable = (promo: PromoApi) => {
+    if (cartStore.selectedItems.length === 0) return false
+
+    return (
+        cartStore.subtotal >= (promo?.min_spend ?? 0) &&
+        (cartStore.selectedPromo.length === 0 ||
+            cartStore.selectedPromo.some((p) => p.code === promo.code))
+    )
 }
 
 onMounted(async () => {

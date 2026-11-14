@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { CartItem, PromoApi } from '../types/cart'
+import type { CartItem, PromoApi, ShippingApi } from '../types/cart'
 import { clampCartQty } from '../utils/cartQty'
 import { useFetchStore } from './fetch.store'
 import { useErrorStore } from './error.store'
@@ -13,6 +13,7 @@ export const useCartStore = defineStore('cart', {
     availablePromos: [] as PromoApi[],
     selectedItems: [] as CartItem[],
     selectedPromo: [] as PromoApi[],
+    shipping: null as ShippingApi | null,
     subtotal: 0,
     discountPrice: 0,
     deliveryFee: 0,
@@ -24,16 +25,27 @@ export const useCartStore = defineStore('cart', {
     async fetchCart() {
       const res = await this.fetchStore.fetchData('cart')
 
-      console.log(res)
       if (!res || res?.error) {
         this.errorStore.setError(res?.error || { message: "Terjadi Kesalahan Pada Sistem! Tidak dapat mendapatkan data keranjang!", status: 500 })
         return
       }
       this.cart = res.items
+      this.shipping = res.shipping
     },
     recalculateTotal() {
       this.subtotal = this.selectedItems.reduce((acc, curr) => acc + curr.price * curr.qty, 0)
+
+      const shipping = this.shipping
+      if (shipping) {
+        this.deliveryFee =
+          this.subtotal < shipping.free_above ? shipping.fee : 0
+      } else {
+        this.deliveryFee = 0
+      }
+
+      this.calculateDiscountPrice()
       this.total = this.subtotal - this.discountPrice + this.deliveryFee
+      this.total = this.total < 0 ? 0 : this.total
     },
     setCartQty(sku: string, rawQty: number) {
       const item = this.cart.find((i) => i.sku === sku)
@@ -86,9 +98,11 @@ export const useCartStore = defineStore('cart', {
     },
     selectPromo(promo: PromoApi) {
       this.selectedPromo.push(promo)
+      this.recalculateTotal()
     },
     unselectPromo(promo: PromoApi) {
       this.selectedPromo = this.selectedPromo.filter((p) => p.code !== promo.code)
+      this.recalculateTotal()
     },
     calculateDiscountPrice() {
       this.discountPrice = this.selectedPromo.reduce((acc, curr) => {

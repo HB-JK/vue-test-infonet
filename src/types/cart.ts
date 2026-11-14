@@ -8,12 +8,14 @@ export type CartItemApi = {
   stock?: number
 }
 
+export type PromoType = 'percent' | 'percentage' | 'fixed' | 'free_shipping'
+
 export type PromoApi = {
   code: string
-  type: 'percent' | 'fixed'
-  value: number | string
-  max_discount: number | null
-  min_spend: number
+  type: PromoType
+  value?: number
+  max_discount?: number
+  min_spend?: number
   expires_at: string
   active: boolean
 }
