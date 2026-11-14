@@ -15,7 +15,7 @@ Daftar hal yang ambigu atau bertentangan di spec/data, dan **asumsi yang saya pa
 Tulis **urutan** perhitungan yang kamu pakai, dari subtotal sampai total, termasuk aturan
 pembulatan. Contoh format: `subtotal → diskon → ... → total`.
 1. subtotal = harga total dari semua barang yang dipilih disertai quantitynya
-2. diskon = subtotal - (harga diskon tergantung persentase atau fix)
+2. diskon = subtotal - (harga diskon tergantung persentase atau fix), saya membuat aturan pembulatan kebawah
 3. delivery fee = fix 20000, namun apabila diatas 20000 maka akan jadi 0
 4. total = subtotal - diskon + delivery fee
 
